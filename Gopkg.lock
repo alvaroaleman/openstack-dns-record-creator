@@ -3,6 +3,23 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/gophercloud/gophercloud"
+  packages = [
+    ".",
+    "openstack",
+    "openstack/compute/v2/flavors",
+    "openstack/compute/v2/images",
+    "openstack/compute/v2/servers",
+    "openstack/identity/v2/tenants",
+    "openstack/identity/v2/tokens",
+    "openstack/identity/v3/tokens",
+    "openstack/utils",
+    "pagination"
+  ]
+  revision = "d2fe5bf4e65410df3bcca179f80aa84a3fc7fb98"
+
+[[projects]]
+  branch = "master"
   name = "github.com/streadway/amqp"
   packages = ["."]
   revision = "d27ae102b8892a98ca4edb74539436af62577379"
@@ -10,6 +27,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b9e9d2f6b3c495200d5a3caaf04941db75013009343aac61f330eb613ea20587"
+  inputs-digest = "0467e47f129e96a54e9af33318930103d3170abe176a749aa1681bca7a1182a9"
   solver-name = "gps-cdcl"
   solver-version = 1

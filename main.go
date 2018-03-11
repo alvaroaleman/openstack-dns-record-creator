@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
 	"github.com/streadway/amqp"
 )
 
@@ -89,13 +90,18 @@ func main() {
 		log.Fatalf("Error registering consumer: '%s'", err)
 	}
 
+	controller, err := newController()
+	if err != nil {
+		log.Fatalf("Error creating controller: '%v'", err)
+	}
+
 	halt := make(chan bool)
 	log.Printf("Successfully finished startup!")
-	go handleMessage(msgs)
+	go controller.handleMessage(msgs)
 	<-halt
 }
 
-func handleMessage(msgChannel <-chan amqp.Delivery) {
+func (c *Controller) handleMessage(msgChannel <-chan amqp.Delivery) {
 	for rawMsg := range msgChannel {
 		var msg Message
 		err := json.Unmarshal(rawMsg.Body, &msg)
@@ -113,12 +119,12 @@ func handleMessage(msgChannel <-chan amqp.Delivery) {
 			continue
 		}
 
-		go getInstanceNameAndCreateRecord(msg.Payload.FloatingIP.FloatingIPAddress)
+		go c.getInstanceNameAndCreateRecord(msg.Payload.FloatingIP.FloatingIPAddress)
 	}
 }
 
-func getInstanceNameAndCreateRecord(floatingIP string) {
-	instanceName, err := getIntanceName(floatingIP)
+func (c *Controller) getInstanceNameAndCreateRecord(floatingIP string) {
+	instanceName, err := c.getIntanceName(floatingIP)
 	if err != nil {
 		log.Printf("Error getting instance name for ip '%s': '%v'", floatingIP, err)
 		return
@@ -130,8 +136,33 @@ func getInstanceNameAndCreateRecord(floatingIP string) {
 	}
 }
 
-func getIntanceName(floatingIP string) (string, error) {
-	log.Printf("Not implemented: Get instance name for FIP '%s'", floatingIP)
+func (c *Controller) getIntanceName(floatingIP string) (string, error) {
+	allPages, err := servers.List(c.OpenstackComputeClient, servers.ListOpts{AllTenants: true}).AllPages()
+	if err != nil {
+		return "", err
+	}
+	allServers, err := servers.ExtractServers(allPages)
+	if err != nil {
+		return "", err
+	}
+
+	// addresses is []map[string]interface{} but we can not directly cast that...
+	for _, server := range allServers {
+		for _, val := range server.Addresses {
+			if valList, ok := val.([]interface{}); ok {
+				for _, valListItem := range valList {
+					if valListItemMap, ok := valListItem.(map[string]interface{}); ok {
+						if addressType, ok := valListItemMap["OS-EXT-IPS:type"]; ok && addressType == "floating" {
+							if addr, ok := valListItemMap["addr"]; ok && addr == floatingIP {
+								return server.Name, nil
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	return "", nil
 }
 
