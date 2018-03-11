@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -89,12 +90,22 @@ func main() {
 	}
 
 	halt := make(chan bool)
+	log.Printf("Successfully finished startup!")
 	go handleMessage(msgs)
 	<-halt
 }
 
 func handleMessage(msgChannel <-chan amqp.Delivery) {
-	for msg := range msgChannel {
-		log.Printf("Got message:\n'%s'\n", msg)
+	for rawMsg := range msgChannel {
+		var msg Message
+		err := json.Unmarshal(rawMsg.Body, &msg)
+		if err != nil {
+			log.Printf("Error decoding message: %s", err)
+			continue
+		}
+		if msg.EventType != "floatingip.update.end" {
+			log.Printf("Ingoring event of type '%s'...", msg.EventType)
+			continue
+		}
 	}
 }
