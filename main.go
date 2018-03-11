@@ -107,5 +107,44 @@ func handleMessage(msgChannel <-chan amqp.Delivery) {
 			log.Printf("Ingoring event of type '%s'...", msg.EventType)
 			continue
 		}
+
+		if msg.Payload.FloatingIP.FixedIPAddress == "" {
+			go removeRecord(msg.Payload.FloatingIP.FloatingIPAddress)
+			continue
+		}
+
+		go getInstanceNameAndCreateRecord(msg.Payload.FloatingIP.FloatingIPAddress)
 	}
+}
+
+func getInstanceNameAndCreateRecord(floatingIP string) {
+	instanceName, err := getIntanceName(floatingIP)
+	if err != nil {
+		log.Printf("Error getting instance name for ip '%s': '%v'", floatingIP, err)
+		return
+	}
+
+	err = createRecord(instanceName, floatingIP)
+	if err != nil {
+		log.Printf("Error creating record for intsance '%s': '%v'", instanceName, err)
+	}
+}
+
+func getIntanceName(floatingIP string) (string, error) {
+	log.Printf("Not implemented: Get instance name for FIP '%s'", floatingIP)
+	return "", nil
+}
+
+func createRecord(name, address string) error {
+	log.Printf("Not implemented: Creating record '%s' for address %s", name, address)
+	return nil
+}
+
+func removeRecord(address string) error {
+	// Kinda shitty to delete just based on address, however the FloatingIP events
+	// after a deletion do not give any hints in regards to what the address was attached
+	// to (both port_id and fixed_ip_address are null)
+	// So the only alterantive would be to internally track that which is even worse
+	log.Printf("Not implemented: Deleting record for address '%s'", address)
+	return nil
 }

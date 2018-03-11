@@ -6,7 +6,7 @@ type FloatingIPUpdatEvent struct {
 }
 
 type FloatingIPPayLoad struct {
-	Floatingip FloatingIPUpdatEvent `json:"floatingip"`
+	FloatingIP FloatingIPUpdatEvent `json:"floatingip"`
 }
 
 type Message struct {
